@@ -14,7 +14,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup SAPL (snapshot)
         uses: ./
@@ -41,19 +41,16 @@ jobs:
 
           cat > /tmp/sapl-test-policies/sample.sapltest << 'TEST'
           requirement "alice can read" {
-              scenario "permit when alice reads" {
-                  given
-                      document "allow-read"
-                  when "alice" attempts "read" on "data"
-                  expect permit
-              }
+              given
+                  - document "allow-read"
 
-              scenario "deny when bob reads" {
-                  given
-                      document "allow-read"
+              scenario "permit when alice reads"
+                  when "alice" attempts "read" on "data"
+                  expect permit;
+
+              scenario "deny when bob reads"
                   when "bob" attempts "read" on "data"
-                  expect not-applicable
-              }
+                  expect not-applicable;
           }
           TEST
 
