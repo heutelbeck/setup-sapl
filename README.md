@@ -2,6 +2,8 @@
 
 GitHub Action to install the [SAPL](https://sapl.io) CLI for policy testing, evaluation, and coverage analysis.
 
+> **Preview:** SAPL 4.0 is in preview. Only `version: snapshot` is available. Stable version pinning will be supported once 4.0.0 is released.
+
 ## Usage
 
 ### Run policy tests
@@ -10,28 +12,6 @@ GitHub Action to install the [SAPL](https://sapl.io) CLI for policy testing, eva
 steps:
   - uses: actions/checkout@v4
   - uses: heutelbeck/setup-sapl@v1
-  - run: sapl test --dir ./policies
-```
-
-### Pin a specific version
-
-```yaml
-steps:
-  - uses: actions/checkout@v4
-  - uses: heutelbeck/setup-sapl@v1
-    with:
-      version: '4.0.0'
-  - run: sapl test --dir ./policies
-```
-
-### Use the latest snapshot
-
-```yaml
-steps:
-  - uses: actions/checkout@v4
-  - uses: heutelbeck/setup-sapl@v1
-    with:
-      version: snapshot
   - run: sapl test --dir ./policies
 ```
 
@@ -65,7 +45,7 @@ steps:
 ```yaml
 strategy:
   matrix:
-    os: [ubuntu-latest, windows-latest, macos-latest]
+    os: [ubuntu-latest, windows-latest]
 runs-on: ${{ matrix.os }}
 steps:
   - uses: actions/checkout@v4
@@ -77,7 +57,7 @@ steps:
 
 | Input | Description | Default |
 |-------|-------------|---------|
-| `version` | SAPL version: `latest`, `snapshot`, or a specific version like `4.0.0` | `latest` |
+| `version` | `snapshot`, `latest` (once stable releases exist), or a specific version like `4.0.0` | `snapshot` |
 | `token` | GitHub token for downloading release assets | `${{ github.token }}` |
 
 ## Outputs
@@ -88,12 +68,12 @@ steps:
 
 ## Supported platforms
 
-| Runner | Architecture |
-|--------|-------------|
-| `ubuntu-latest` | x86_64 |
-| `ubuntu-24.04-arm` | ARM64 |
-| `windows-latest` | x86_64 |
-| `macos-latest` | ARM64 |
+| Runner | Architecture | Snapshot | Stable (future) |
+|--------|-------------|----------|------------------|
+| `ubuntu-latest` | x86_64 | Yes | Yes |
+| `ubuntu-24.04-arm` | ARM64 | Yes | Yes |
+| `windows-latest` | x86_64 | Yes | Yes |
+| `macos-latest` | ARM64 | No | Yes |
 
 ## About SAPL
 

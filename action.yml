@@ -8,9 +8,9 @@ branding:
 
 inputs:
   version:
-    description: 'SAPL version: "latest" for latest stable, "snapshot" for latest snapshot, or a specific version like "4.0.0"'
+    description: 'SAPL version: "snapshot" for latest snapshot, "latest" for latest stable release, or a specific version like "4.0.0". Only "snapshot" is available during the preview period.'
     required: false
-    default: 'latest'
+    default: 'snapshot'
   token:
     description: 'GitHub token for downloading release assets. Defaults to the automatic GITHUB_TOKEN.'
     required: false
