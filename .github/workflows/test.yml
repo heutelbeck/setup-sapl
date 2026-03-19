@@ -1,0 +1,60 @@
+name: Test Action
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SAPL (snapshot)
+        uses: ./
+        id: setup
+        with:
+          version: snapshot
+
+      - name: Verify installation
+        shell: bash
+        run: |
+          sapl --version
+          echo "Installed version: ${{ steps.setup.outputs.version }}"
+
+      - name: Run sample test
+        shell: bash
+        run: |
+          mkdir -p /tmp/sapl-test-policies
+          cat > /tmp/sapl-test-policies/sample.sapl << 'POLICY'
+          policy "allow-read"
+          permit
+              subject == "alice"
+              action  == "read"
+          POLICY
+
+          cat > /tmp/sapl-test-policies/sample.sapltest << 'TEST'
+          requirement "alice can read" {
+              scenario "permit when alice reads" {
+                  given
+                      document "allow-read"
+                  when "alice" attempts "read" on "data"
+                  expect permit
+              }
+
+              scenario "deny when bob reads" {
+                  given
+                      document "allow-read"
+                  when "bob" attempts "read" on "data"
+                  expect not-applicable
+              }
+          }
+          TEST
+
+          sapl test --dir /tmp/sapl-test-policies

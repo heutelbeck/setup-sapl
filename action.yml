@@ -1,0 +1,89 @@
+name: 'Setup SAPL'
+description: 'Download and install the SAPL CLI for policy testing, evaluation, and coverage analysis'
+author: 'Dominik Heutelbeck'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  version:
+    description: 'SAPL version: "latest" for latest stable, "snapshot" for latest snapshot, or a specific version like "4.0.0"'
+    required: false
+    default: 'latest'
+  token:
+    description: 'GitHub token for downloading release assets. Defaults to the automatic GITHUB_TOKEN.'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  version:
+    description: 'The version string reported by the installed SAPL binary'
+    value: ${{ steps.install.outputs.version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install SAPL CLI
+      id: install
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        set -euo pipefail
+
+        REPO="heutelbeck/sapl-policy-engine"
+
+        case "${{ runner.os }}-${{ runner.arch }}" in
+          Linux-X64)    PLATFORM="linux-amd64"   ; EXT="tar.gz" ;;
+          Linux-ARM64)  PLATFORM="linux-arm64"   ; EXT="tar.gz" ;;
+          macOS-ARM64)  PLATFORM="macos-arm64"   ; EXT="tar.gz" ;;
+          Windows-X64)  PLATFORM="windows-amd64" ; EXT="zip"    ;;
+          *)
+            echo "::error::Unsupported platform: ${{ runner.os }}-${{ runner.arch }}"
+            exit 1
+            ;;
+        esac
+
+        case "${INPUT_VERSION}" in
+          latest)
+            TAG=$(gh api "repos/${REPO}/releases/latest" --jq '.tag_name')
+            ;;
+          snapshot)
+            TAG="snapshot-node"
+            ;;
+          *)
+            TAG="v${INPUT_VERSION}"
+            ;;
+        esac
+        echo "Resolved release tag: ${TAG}"
+
+        DOWNLOAD_DIR=$(mktemp -d)
+        trap 'rm -rf "${DOWNLOAD_DIR}"' EXIT
+
+        gh release download "${TAG}" --repo "${REPO}" --pattern "sapl-*-${PLATFORM}.${EXT}" --dir "${DOWNLOAD_DIR}"
+
+        ARCHIVE=$(find "${DOWNLOAD_DIR}" -name "sapl-*-${PLATFORM}.${EXT}" | head -1)
+        if [[ -z "${ARCHIVE}" ]]; then
+          echo "::error::No matching asset for platform ${PLATFORM} in release ${TAG}"
+          exit 1
+        fi
+        echo "Downloaded: $(basename "${ARCHIVE}")"
+
+        INSTALL_DIR="${HOME}/.sapl-cli"
+        mkdir -p "${INSTALL_DIR}"
+
+        if [[ "${EXT}" == "tar.gz" ]]; then
+          tar -xzf "${ARCHIVE}" -C "${INSTALL_DIR}"
+        else
+          unzip -oq "${ARCHIVE}" -d "${INSTALL_DIR}"
+        fi
+
+        chmod +x "${INSTALL_DIR}/sapl" 2>/dev/null || true
+
+        echo "${INSTALL_DIR}" >> "${GITHUB_PATH}"
+
+        INSTALLED_VERSION=$("${INSTALL_DIR}/sapl" --version 2>&1 | head -1 || echo "unknown")
+        echo "Installed: ${INSTALLED_VERSION}"
+        echo "version=${INSTALLED_VERSION}" >> "${GITHUB_OUTPUT}"
